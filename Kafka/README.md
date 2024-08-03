@@ -1,54 +1,92 @@
 #Problem Statement - Piyush Garg - Youtube
 
-- If we are inserting/updating database after every second in a case where zomato delivery guy changing their location so our database goes down
-- In that case we have higher OPS(operation per second)
-- Database have very low throughput(maximum operation allowed per operation)
-- same case will happend in group chat applications also (Real time Applications)
+Scenario: Constant database updates (e.g., Zomato delivery driver location changes) can overwhelm the database.
+-High Operations Per Second (OPS)
+-Low throughput databases struggle with high-frequency updates
+-Similar issues in real-time applications like group chats
+How Kafka Solves These Problems
+-Kafka offers high throughput but isn't a database alternative due to lower storage capacity.
+-Database: Low throughput, high storage
+-Kafka: High throughput, low storage
 
-#How Kafka solve problems
-
--kafka have high throughput but it is not alternative of DB because have low storage
--Database:- Low Throughput and High Storage
--Kafka- High Throughput and Low Storage
+Kafka enables bulk data insertion with high throughput.
 
 ![Kafka working](<./images/Screenshot (59).png>)
 
--Kafka is a service which have high throughput and can insert data in bulk
-
 #Kafka Architecture
 
-@Topic:-
--logical partitioning of the messages & kafka have different topic for one server,
-
-- for example in zomato kafka has 2 topics one for rider updates and another for restaurant updates
+Topics:
+-Logical partitioning of messages; Kafka topics are specific to servers.
+Example: Zomato might have separate topics for rider updates and restaurant updates.
 
 ![kafka](<./images/Screenshot (61).png>) ![kafka](<./images/Screenshot (60).png>)
 
-@partition:-
+#Partitions:
 
-- Each topic have a partition to manage the database like shrading if i want to distribute the data as per the location wise like north, south, east and west
+-Topics are partitioned to manage data, similar to sharding.
+-Example: Data distribution based on regions (North, South, East, West)
+
+-Producers specify the partition for data storage.
+Single consumer setup:
+-Multiple partitions with more consumers than partitions lead to some consumers not having partitions to consume.
+-A single partition can only be consumed by one consumer.
 
 -So basically kafka have
 Kafka --> Topics --> Partitions
 
 ![Main Architect](<./images/Screenshot (62).png>)
-
-- So basically in producer we will define in which partition we want to store data and if have only one consumer then they will consume by only one consumer
-- what if we have 4 partition and have 5 consumer then each will consume by one partition and one who left doesn't have any partiton to follow
-
-- SO In kafka any consumer can consume many partitions but each partition can consume by only one consumer
-  ![consumer-architect](<./images/Screenshot (64).png>)
-
-@So if we want to consume partition by multi consumer then the concept comes as consumer group
+![consumer-architect](<./images/Screenshot (64).png>)
 
 #Consumer Group
 
-- Here Self Balancing will be done by the groups
-
 ![consumer_group](<./images/Screenshot (65).png>)
 
--So using groups we can manage to create queue and pub/sub, where queue will be created by one partition have one consumer group and pub/sub by one partition have multiple groups
+-Allow multiple consumers to balance partition consumption.
+Example: One partition, one consumer group for queueing; one partition, multiple groups for pub/sub.
 
 #Kafka with NodeJS
 
-- kafka load balancing will be managed by the zookeeper
+-Kafka load balancing is managed by Zookeeper, which handles replicas and self-balancing.
+
+#In Terminal
+
+docker run -p 2181:2181 zookeeper // For running or starting the zookeeper
+
+//To run the kafka in our terminal
+docker run -p 9092:9092 ^ // port mapping where we are defining the the default port of kafka 9092 will run on our system 9092
+-e KAFKA_ZOOKEEPER_CONNECT=192.168.34.125:2181 ^ //connect system IP with zookeeper port
+-e KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://192.168.34.125:9092 ^ //providing the listener for the kafka port
+-e KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1 ^ // for replication factor
+confluentinc/cp-kafka
+
+Code Structure
+-Admin: Sets up infrastructure topics.
+-Producers: Generate messages.
+-Consumers: Consume partitions.
+
+In Project terminal add the kafkajs library
+-yarn add kafkajs
+
+#Admin.js file
+
+in admin file we are defining the connection between project and kafka and also creating the topics for our project
+
+#producer.js
+
+-make connection with producer
+-send message as per our topic
+
+#consumer.js
+
+-make connection with consumer
+-subscribe with our topic
+
+#PROCESS_FLOW
+
+![process_flow](<./images/Screenshot (66).png) ![process_flow](<./images/Screenshot (67).png>)
+
+-In our example we are creating one Topic with two partition
+-In producer we will define in which partition we want to store the data
+-In Consumer we listening the port for any data available from the producer
+-If i run the two consumer portal with same group id then auto self balancing will be occur and each consumer will listen from their partition message
+-If i create another consumer with different group id then group 1 will be im auto balance and group 2 will listen all the partitions
